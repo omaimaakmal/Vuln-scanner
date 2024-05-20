@@ -1,0 +1,39 @@
+import subprocess
+import csv
+
+class NiktoScanner:
+    def __init__(self, url_file):
+        self.url_file = url_file
+        self.report = []
+
+    def run_nikto_scan(self, url):
+        nikto_command = f"nikto -h {url} -o nikto_scan.txt"
+        subprocess.run(nikto_command, shell=True)
+        self.parse_nikto_output(url)
+
+    def parse_nikto_output(self, url):
+        with open("nikto_scan.txt", "r") as file:
+            lines = file.readlines()
+            for line in lines:
+                if "OSVDB" in line:
+                    vulnerability = line.strip().split(": ")[1]
+                    self.report.append({"URL": url, "Vulnerability": vulnerability})
+
+    def generate_report(self):
+        with open("nikto_report.csv", "w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(["URL", "Vulnerability"])
+            for entry in self.report:
+                writer.writerow([entry["URL"], entry["Vulnerability"]])
+
+    def run_scans(self):
+        with open(self.url_file, "r") as file:
+            urls = file.readlines()
+            for url in urls:
+                self.run_nikto_scan(url.strip())
+        self.generate_report()
+
+if __name__ == "__main__":
+    url_file = input("Enter the file containing URLs to scan: ")
+    scanner = NiktoScanner(url_file)
+    scanner.run_scans()
